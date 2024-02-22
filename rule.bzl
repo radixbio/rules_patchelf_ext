@@ -24,7 +24,7 @@ patchelf_toolchain = rule(
 )
 
 def _patchelf_impl(ctx):
-    patchelf = ctx.toolchains["//tools/patchelf:toolchain_type"].patchelf.patchelf_binary
+    patchelf = ctx.toolchains["//bazel/rules/rules_patchelf:toolchain_type"].patchelf.patchelf_binary
 
     outs = []
     for file in ctx.files.objs:
@@ -44,9 +44,9 @@ patchelf = rule(
     implementation = _patchelf_impl,
     attrs = {
         "objs": attr.label_list(
-            allow_files = [".so"],
+            allow_files = [".so", ".dylib"],
         ),
         "command": attr.string(),
     },
-    toolchains = ["//tools/patchelf:toolchain_type"],
+    toolchains = ["//bazel/rules/rules_patchelf:toolchain_type"],
 )

@@ -12,6 +12,11 @@ patchelf_toolchain(
     patchelf_binary = "@patchelf_aarch64//:patchelf",
 )
 
+patchelf_toolchain(
+    name = "patchelf_macos_aarch64",
+    patchelf_binary = "@patchelf_aarch64//:patchelf",
+)
+
 toolchain(
     name = "patchelf_linux_x64_toolchain",
     exec_compatible_with = [
@@ -37,5 +42,19 @@ toolchain(
         "@platforms//cpu:aarch64",
     ],
     toolchain = ":patchelf_linux_aarch64",
+    toolchain_type = ":toolchain_type",
+)
+
+toolchain(
+    name = "patchelf_macos_aarch64_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:macos",
+        "@platforms//cpu:aarch64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:macos",
+        "@platforms//cpu:aarch64",
+    ],
+    toolchain = ":patchelf_macos_aarch64",
     toolchain_type = ":toolchain_type",
 )
