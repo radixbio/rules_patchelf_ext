@@ -24,14 +24,15 @@ patchelf_toolchain = rule(
 )
 
 def _patchelf_impl(ctx):
-    patchelf = ctx.toolchains["//bazel/rules/rules_patchelf:toolchain_type"].patchelf.patchelf_binary
-
+    patchelf = ctx.toolchains["@com_github_rules_patchelf//:toolchain_type"].patchelf.patchelf_binary
+    cmd = ctx.attr.command
     outs = []
     for file in ctx.files.objs:
         ctx.actions.run(
             outputs = [ctx.actions.declare_file("null")],
             inputs = [file],
             executable = str(patchelf.files_to_run.executable.short_path),
+            command = cmd + " " + file.path,
         )
         outs.append(file)
     return [
@@ -48,5 +49,5 @@ patchelf = rule(
         ),
         "command": attr.string(),
     },
-    toolchains = ["//bazel/rules/rules_patchelf:toolchain_type"],
+    toolchains = ["@com_github_rules_patchelf//:toolchain_type"],
 )

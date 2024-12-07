@@ -1,0 +1,63 @@
+* rules_patchelf
+=patchelf= is a binary that the Nix community has developed in order to modify ELF binary files.
+This enables workflows that Nix requires, since it's placing shared objects in unusual places.
+** Installation
+Since I haven't set up github releases / CI yet ont this repo, you have to clone into your source tree / use =git_repository= to actually schlep this into your bazel build.
+
+#+begin_src python
+local_repository( # or git_repository
+    name = "com_github_rules_patchelf",
+    path = "bazel/rules/rules_patchelf",
+)
+
+load("@com_github_rules_patchelf//:patchelf_configure.bzl", "patchelf_configure")
+
+patchelf_configure(
+    version = "0.18.0",
+)
+
+load("@com_github_rules_patchelf//:patchelf_dependencies.bzl", "patchelf_dependencies")
+
+patchelf_dependencies()
+
+register_toolchains(
+    "@com_github_rules_patchelf//:patchelf_toolchain",  # This toolchain is build-host specific
+)
+
+#+end_src
+** Motivation
+The tool is broadly useful outside of the Nix community, and this is a =bazel= rule that allows users to interact with it in a bazel-native C/C++ build.
+** Use Cases
+Personally, I use this to rewrite the ELF sections to use =$ORIGIN= as a source for some shared objects, allowing the linker to pull dependent shared libraries from the directory of the toplevel shared library. Patchelf neatly solves this with its =--set-rpath= flag
+
+Renaming shared libraries causes the linker to fail, but patchelf solves this through its =--set-soname= flag
+
+I use both of these features heavily in order to implement JNI native libraries for java rules, and pack the shared objects into a JAR file on the program's classpath. Extracting these at runtime and loading them with =System.loadLibrary= simplifies JVM deployments.
+** Examples
+*** renaming a shared library
+#+begin_src python
+patchelf(
+    name = "example_set_soname",
+    objs = [":my_shared_object"], # generated from a bazel rule
+    command = "--set-soname libexample.so"
+)
+
+genrule(
+    name = "do_so_rename",
+    srcs = [":example_set_soname"],
+    outs = ["libexample.so"],
+    cmd = "cat $< > $@" # bazel's way of addressing the sole input and output of a genrule
+)
+#+end_src
+*** allowing shared objects to depend on libraries in the current directory
+#+begin_src python
+patchelf(
+    name = "example_set_rpath",
+    objs = [":my_shared_object"],
+    command = "--set-rpath '$ORIGIN' libdepends.so"
+)
+#+end_src
+** Gotchas
+I haven't figured out a nice way to make the =DEBUG= error around =sha256='s not being included in the =http_archive= in =patchelf_dependencies=. Suggestions as to how this should work would be good.
+
+This repo also doen't have a LICENCE yet, soon to be a oss liscence
