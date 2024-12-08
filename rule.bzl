@@ -32,7 +32,7 @@ def _patchelf_impl(ctx):
             outputs = [ctx.actions.declare_file("null")],
             inputs = [file],
             executable = str(patchelf.files_to_run.executable.short_path),
-            command = cmd + " " + file.path,
+            arguments = (cmd + " " + file.path).split(" "),
         )
         outs.append(file)
     return [
