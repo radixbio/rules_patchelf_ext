@@ -25,29 +25,42 @@ patchelf_toolchain = rule(
 
 def _patchelf_impl(ctx):
     patchelf = ctx.toolchains["@com_github_rules_patchelf//:toolchain_type"].patchelf.patchelf_binary
+    file = ctx.file.obj
     cmd = ctx.attr.command
-    outs = []
-    for file in ctx.files.objs:
-        ctx.actions.run(
-            outputs = [ctx.actions.declare_file("null")],
-            inputs = [file],
-            executable = str(patchelf.files_to_run.executable.short_path),
-            arguments = (cmd + " " + file.path).split(" "),
-        )
-        outs.append(file)
+
+    arguments = (cmd + " " + file.path).split(" ")
+    out = None
+
+    if ctx.attr.output:
+        out = ctx.actions.declare_file(ctx.attr.output)
+        arguments.append("--output")
+        arguments.append(out.path)
+    else:
+        out = ctx.actions.declare_file(ctx.attr.name + "_null")
+
+    ctx.actions.run(
+        outputs = [out],
+        inputs = [ctx.file.obj, patchelf.files_to_run.executable],
+        executable = str(patchelf.files_to_run.executable.path),
+        arguments = arguments,
+    )
+
     return [
         DefaultInfo(
-            files = depset(outs),
+            files = depset([out]),
         ),
     ]
 
+# TODO: perhaps rename this to patchelf_shared_library
+# since it's not creating executable outputs
 patchelf = rule(
     implementation = _patchelf_impl,
     attrs = {
-        "objs": attr.label_list(
-            allow_files = [".so", ".dylib"],
+        "obj": attr.label(
+            allow_single_file = True,
         ),
         "command": attr.string(),
+        "output": attr.string(),  # TODO: should this be mandatory since otherwise it's in-place?
     },
     toolchains = ["@com_github_rules_patchelf//:toolchain_type"],
 )
